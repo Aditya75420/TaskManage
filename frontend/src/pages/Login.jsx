@@ -59,6 +59,12 @@ export default function Login() {
               Sign In
             </button>
             
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 font-medium">Demo Credentials:</p>
+              <p className="text-xs text-blue-600">Email: demo@example.com</p>
+              <p className="text-xs text-blue-600">Password: password</p>
+            </div>
+            
             <p className="text-center text-sm text-gray-600">
               Don't have an account?{' '}
               <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
