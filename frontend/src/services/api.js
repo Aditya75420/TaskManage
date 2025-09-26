@@ -1,9 +1,15 @@
 import axios from 'axios'
 
-// Mock API for demo purposes when backend is not available
-const isBackendAvailable = process.env.REACT_APP_BACKEND_URL || false
+// Backend configuration
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+const isBackendAvailable = process.env.REACT_APP_USE_BACKEND === 'true' || process.env.REACT_APP_BACKEND_URL
 
-console.log('API Configuration:', { isBackendAvailable, NODE_ENV: process.env.NODE_ENV })
+console.log('API Configuration:', { 
+  isBackendAvailable, 
+  BACKEND_URL, 
+  NODE_ENV: process.env.NODE_ENV,
+  USE_BACKEND: process.env.REACT_APP_USE_BACKEND 
+})
 
 // Mock data storage
 let mockData = {
@@ -162,17 +168,57 @@ let API
 
 if (isBackendAvailable) {
   // Use real axios for backend
+  const baseURL = `${BACKEND_URL}/api`
+  console.log('Using backend API:', baseURL)
+  
   API = axios.create({
-    baseURL: process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api',
+    baseURL: baseURL,
+    timeout: 10000, // 10 second timeout
+    headers: {
+      'Content-Type': 'application/json',
+    }
   })
   
-  API.interceptors.request.use((req) => {
-    const token = localStorage.getItem('token')
-    if (token) req.headers.Authorization = `Bearer ${token}`
-    return req
-  })
+  // Request interceptor to add auth token
+  API.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+      console.log('API Request:', config.method?.toUpperCase(), config.url, config.data)
+      return config
+    },
+    (error) => {
+      console.error('Request interceptor error:', error)
+      return Promise.reject(error)
+    }
+  )
+  
+  // Response interceptor for error handling
+  API.interceptors.response.use(
+    (response) => {
+      console.log('API Response:', response.status, response.config.url, response.data)
+      return response
+    },
+    (error) => {
+      console.error('API Error:', error.response?.status, error.config?.url, error.response?.data)
+      
+      // Handle common errors
+      if (error.response?.status === 401) {
+        // Unauthorized - clear token and redirect to login
+        localStorage.removeItem('token')
+        localStorage.removeItem('username')
+        localStorage.removeItem('email')
+        window.location.href = '/login'
+      }
+      
+      return Promise.reject(error)
+    }
+  )
 } else {
   // Use mock API for demo
+  console.log('Using mock API for demo')
   API = mockAPI
 }
 
